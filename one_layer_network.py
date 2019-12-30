@@ -122,8 +122,9 @@ def CrossEntropyLoss(p,Y):
 
 
 
-def ComputeCost(l_cross, W, lamda, N):
+def ComputeCost(p, Y_train, W, lamda, N):
 
+    l_cross = CrossEntropyLoss(p, Y_train)
     sum_1 = np.sum(l_cross)
     sum_2 = lamda * np.sum(np.square(W))
     J = (sum_1 / N) + sum_2
@@ -165,6 +166,7 @@ def ComputeGradients(x_batch, y_batch, predicted_batch, W):
     Arguments:
         x_batch: image pixel data, size d x n_b
         y_batch:  one hot representation of labels, size K x n_b
+        predicted_batch: probabilities of predicted labels, size K x n_b
     Returns:
         the gradient of W, of size K x d
         the gradient of b, of size K x 1
@@ -197,7 +199,7 @@ def MinibatchGD(X_train, Y_train, GDparams, W, b, lamda, N):
     n_epochs = GDparams['n_epochs']
 
     W_star = np.zeros(np.shape(W))
-    b_star = np.zeros((10, 1))
+    b_star = np.zeros(np.shape(b))
 
     W, b = initializer(10, 3072)
 
@@ -210,9 +212,7 @@ def MinibatchGD(X_train, Y_train, GDparams, W, b, lamda, N):
             X_batch = X_train[:, i_start:i_end]
             Y_batch = Y_train[:, i_start:i_end]
 
-            s = EvaluateClassifier(X_batch, W, b)
-            p = Softmax(s)
-            predicted_batch = predict(p)
+            predicted_batch = EvaluateClassifier(X_batch, W, b)
             dW, db = ComputeGradients(X_batch, Y_batch, predicted_batch, W)
 
         W_star -= eta * dW
@@ -221,14 +221,11 @@ def MinibatchGD(X_train, Y_train, GDparams, W, b, lamda, N):
 
 
         p = EvaluateClassifier(X_train, W_star, b_star)
-
-        l_cross = CrossEntropyLoss(p, Y_train)
-        print(l_cross)
-        J = ComputeCost(l_cross, W, lamda , 10000)
+        J = ComputeCost(p, Y_train, W, lamda, 10000)
         print(f'for epoch:{epoch} the cost is {J}')
         predicted = predict(p)
         acc = accuracy(predicted, y_train)
-        print(f'for epoch:{epoch} the accuracy is {acc}')
+        print(f'for epoch:{epoch} the accuracy is {acc}\n')
 
 
 
