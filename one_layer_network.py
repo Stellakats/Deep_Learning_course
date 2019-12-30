@@ -77,7 +77,7 @@ def sizes(X,y):
     return  num_classes, dimension, num_samples
 
 
-def initializer(K, d, N):
+def initializer(K, d):
     """
     A function to initialize the weights and bias
     :returns
@@ -87,9 +87,18 @@ def initializer(K, d, N):
     """
 
     W = 0.01 * np.random.randn(K, d)
-    b = 0.01 * np.random.randn(K, N)
+    b = 0.01 * np.random.randn(K, 1)
 
     return W, b
+
+def Softmax(s):
+    """
+    Softmax function than receives scores and translates them to probabilities (k x N)
+    """
+    max = np.max(s)
+    z = np.exp(s - max) # for numerical stability purposes
+    p = z / np.sum(z)
+    return p
 
 def EvaluateClassifier(X, W, b):
     """
@@ -103,24 +112,19 @@ def EvaluateClassifier(X, W, b):
     return s
 
 
-def Softmax(s):
-    """
-    Softmax function than receives scores and translates them to probabilities (k x N)
-    """
-    max = np.max(s)
-    z = np.exp(s - max) # for numerical stability purposes
-    p = z / np.sum(z)
-    return p
 
-def CrossEntropyLoss(p, Y):
-    l_cross = np.log(np.dot(Y.T, p))
+
+def CrossEntropyLoss(p,Y):
+    l_cross = 0 - np.log(np.sum(np.prod((Y, p), axis=0), axis=0))
     return l_cross
 
-def ComputeCost(l_cross, W, lamda, d):
+
+
+def ComputeCost(l_cross, W, lamda, N):
 
     sum_1 = np.sum(l_cross)
     sum_2 = lamda * np.sum(np.square(W))
-    J = (sum_1 / d) + sum_2
+    J = (sum_1 / N) + sum_2
     return J
 
 def predict(p):
@@ -151,24 +155,115 @@ def accuracy(predicted, actual):
     return accuracy
 
 
+def ComputeGradients(x_batch, y_batch, predicted_batch, W):
+    """
+    Recieves mini-batch of dataset, and corresponding p_batch
+    and yields the gradients
+
+    Arguments:
+        x_batch: image pixel data, size d x n_b
+        y_batch:  one hot representation of labels, size K x n_b
+    Returns:
+        the gradient of W, of size K x d
+        the gradient of b, of size K x 1
+    """
+    n_b = np.shape(x_batch)[1]  # size of mini-batch
+    db = np.zeros((10, 1))
+
+    G_batch = - (y_batch - predicted_batch) # 10 x n_b
+
+
+    dW = np.dot(G_batch, x_batch.T) / n_b
+    dW += 2 * lamda * W
+    db = np.dot(G_batch, np.ones(n_b).T).reshape(-1, 1) / n_b
+
+    return dW, db
+
+def MinibatchGD(X_train, Y_train, GDparams, W, b, lamda, N):
+    """
+    receives whole dataset, divides into batches and performs SGD
+    Arguments:
+
+    Returns:
+        W: learnt weights
+        b: learnt biases
+
+    """
+    dW, db = None, None
+    n_batch = GDparams['n_batch']
+    eta = GDparams['eta']
+    n_epochs = GDparams['n_epochs']
+
+    W_star = np.zeros(np.shape(W))
+    b_star = np.zeros((10, 1))
+
+    W, b = initializer(10, 3072)
+
+    for epoch in range(n_epochs):
+
+        for i in range(int(N / n_batch)):
+            # create the mini batch
+            i_start = i * n_batch
+            i_end = i * n_batch + n_batch
+            X_batch = X_train[:, i_start:i_end]
+            Y_batch = Y_train[:, i_start:i_end]
+
+            s = EvaluateClassifier(X_batch, W, b)
+            p = Softmax(s)
+            predicted_batch = predict(p)
+            dW, db = ComputeGradients(X_batch, Y_batch, predicted_batch, W)
+
+        W_star -= eta * dW
+        b_star -= eta * db
+
+
+
+        s = EvaluateClassifier(X_train, W_star, b_star)
+        p = Softmax(s)
+        l_cross = CrossEntropyLoss(p, Y_train)
+        print(l_cross)
+        J = ComputeCost(l_cross, W, lamda , 10000)
+        print(f'for epoch:{epoch} the cost is {J}')
+        predicted = predict(p)
+        acc = accuracy(predicted, y_train)
+        print(f'for epoch:{epoch} the accuracy is {acc}')
+
+
+
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
+
+    lamda = 0.1
+    GDparams = {'n_batch': 100, 'eta': 0.1, 'n_epochs': 20}
 
     # image = ViewImage(batch_1, 40)
     # image.plot_it()
 
     X_train, y_train, Y_train = LoadBatch("/Users/stella/Desktop/data_batch_1")
     K, d, N = sizes(X_train, y_train)
-    W, b = initializer(K, d, N)
-    s = EvaluateClassifier(X_train, W, b)
-    p = Softmax(s)
-    l_cross = CrossEntropyLoss(p, Y_train)
-    J = ComputeCost(l_cross, W, 0.1, d)
-    predicted = predict(p)
-    accuracy = accuracy(predicted, y_train)
+    W, b = initializer(K, d)
+    #s = EvaluateClassifier(X_train, W, b)
+    #p = Softmax(s)
+    #l_cross = CrossEntropyLoss(p, Y_train)
+    #J = ComputeCost(l_cross, W, lamda , d)
+    #predicted = predict(p)
+    #accuracy = accuracy(predicted, y_train)
+
+    MinibatchGD(X_train, Y_train,  GDparams, W, b, lamda, N)
 
 
-    print(np.shape(X_train), np.shape(y_train), np.shape(Y_train))
+
+
+
+    #print(f'the size of X_train is {np.shape(X_train)} of y is {np.shape(y_train)} of Y its {np.shape(Y_train)} and of p it is {np.shape(p)}' )
 
 
 
