@@ -106,10 +106,12 @@ def EvaluateClassifier(X, W, b):
     :param W: weight matrix of size K x d
     :param b: bias matrix of size K x N
     :return:
-        the class probabilities for every sample. that is a matrix of size K x N = 10 x 10000
+        the class probabilities for every sample. that is a matrix of size K x N
     """
     s = np.dot(W, X) + b
-    return s
+    p = Softmax(s)
+
+    return p
 
 
 
@@ -218,8 +220,8 @@ def MinibatchGD(X_train, Y_train, GDparams, W, b, lamda, N):
 
 
 
-        s = EvaluateClassifier(X_train, W_star, b_star)
-        p = Softmax(s)
+        p = EvaluateClassifier(X_train, W_star, b_star)
+
         l_cross = CrossEntropyLoss(p, Y_train)
         print(l_cross)
         J = ComputeCost(l_cross, W, lamda , 10000)
@@ -250,8 +252,7 @@ if __name__ == "__main__":
     X_train, y_train, Y_train = LoadBatch("/Users/stella/Desktop/data_batch_1")
     K, d, N = sizes(X_train, y_train)
     W, b = initializer(K, d)
-    #s = EvaluateClassifier(X_train, W, b)
-    #p = Softmax(s)
+
     #l_cross = CrossEntropyLoss(p, Y_train)
     #J = ComputeCost(l_cross, W, lamda , d)
     #predicted = predict(p)
