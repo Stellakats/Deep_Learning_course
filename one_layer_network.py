@@ -2,7 +2,6 @@ import numpy as np
 from matplotlib import pyplot
 import pickle
 
-
 class NeuralNet:
 
     def __init__(self, X, y, **kwargs):
@@ -32,7 +31,7 @@ class NeuralNet:
         W: matrix of size K x d
         s  = W * x + b = [K x d] * [d x N] + [K * N]
         """
-        return 0.01 * np.random.randn(self.k, self.d)
+        return np.random.normal(0, 0.01, (self.k, self.d))
 
     def b_initializer(self):
         """
@@ -41,16 +40,15 @@ class NeuralNet:
         b : matrix of size K x N
         s  = W * x + b = [K x d] * [d x N] + [K * N]
         """
-        return 0.01 * np.random.randn(self.k, 1)
+        return np.random.normal(0, 0.01, (self.k, 1))
 
     def softmax(self, s):
         """
         Softmax function than receives scores and translates them to probabilities (k x N)
         (will be used in evaluate_classifier function)
         """
-        max = np.max(s)
-        z = np.exp(s - max)  # for numerical stability purposes
-        p = z / np.sum(z)
+
+        p = np.exp(s) / np.dot(np.ones(s.shape[0]).T , np.exp(s))
         return p
 
     def evaluate_classifier(self, X):
@@ -104,71 +102,80 @@ class NeuralNet:
         :return:
             the accuracy
         """
-        correct = len(np.where(Y_true == Y_pred))
-        print(Y_pred.shape, Y_true.shape) #[0] ???
+        y_pred = np.array(np.argmax(Y_pred, axis=0))
+        y_true = np.array(np.argmax(Y_true, axis=0))
+        correct = len(np.where(y_true == y_pred)[0])
 
-        return correct/self.N
-
-
-
+        return correct/ y_true.shape[0]
 
 
+    def compute_gradients(self, x_batch, y_true_batch, y_predicted_batch):
+        """
+        Recieves mini-batch of dataset, and corresponding p_batch
+        and yields the gradients
+
+        Arguments:
+            x_batch: image pixel data, size d x n_b
+            y_batch:  one hot representation of labels, size K x n_b
+            predicted_batch: probabilities of predicted labels, size K x n_b
+        Returns:
+            the gradient of W, of size K x d
+            the gradient of b, of size K x 1
+        """
+        G_batch = - (y_true_batch - y_predicted_batch) # 10 x batch_size
+
+        dW = 1 / self.batch_size * np.dot(G_batch, x_batch.T)
+        dW += 2 * self.lamda * self.w
+
+        db = 1 / self.batch_size * np.sum(G_batch, axis=1).reshape(-1, 1)
+
+        return dW, db
+
+
+    def mini_batch_GD(self, X_train, Y_train):
+        """
+        receives whole dataset, divides into batches and performs SGD
+        Arguments:
+
+        Returns:
+            W: learnt weights
+            b: learnt biases
+
+        """
+        n_batches = int(self.N / self.batch_size)
+
+        for epoch in range(self.epochs):
+
+            for i in range(n_batches):
+                # create the mini batch
+                i_start = i * self.batch_size
+                i_end = i * self.batch_size + self.batch_size
+                X_batch = X_train[:, i_start:i_end]
+                Y_batch = Y_train[:, i_start:i_end]
+
+                Y_pred_batch = self.evaluate_classifier(X_batch)
+                dW, db = self.compute_gradients(X_batch, Y_batch, Y_pred_batch)
+
+                self.w -= self.lr * dW
+                self.b -= self.lr * db
+
+
+            Y_pred_train = self.evaluate_classifier(X_train)
+            #Y_pred_val = self.evaluate_classifier(X_val)
+            cost_train = self.compute_cost(X_train, Y_pred_train)
+            acc_train = self.accuracy(Y_pred_train, Y_train)
+            #cost_val = self.compute_cost(X_val, Y_pred_val)
+            #acc_val = self.accuracy(Y_pred_val, Y_val)
+
+            print("Epoch ", epoch, " // Train accuracy: ", acc_train, " // Train cost: ", cost_train)
+
+        #return self.w, self.b
 
 
 
 
 
 
-'''
-
-
-def MinibatchGD(X_train, Y_train, GDparams, W, b, lamda, N):
-    """
-    receives whole dataset, divides into batches and performs SGD
-    Arguments:
-
-    Returns:
-        W: learnt weights
-        b: learnt biases
-
-    """
-    dW, db = None, None
-    n_batch = GDparams['n_batch']
-    eta = GDparams['eta']
-    n_epochs = GDparams['n_epochs']
-
-    W, b = initializer(10, 3072)
-
-    W_star = np.zeros(np.shape(W))
-    b_star = np.zeros(np.shape(b))
-    for epoch in range(n_epochs):
-
-        for i in range(int(N / n_batch)):
-            # create the mini batch
-            i_start = i * n_batch
-            i_end = i * n_batch + n_batch
-            X_batch = X_train[:, i_start:i_end]
-            Y_batch = Y_train[:, i_start:i_end]
-
-            predicted_batch = EvaluateClassifier(X_batch, W_star, b_star)
-            dW, db = ComputeGradients(X_batch, Y_batch, predicted_batch, W_star)
-
-            W_star -= eta * dW
-            b_star -= eta * db
-
-        p = EvaluateClassifier(X_train, W_star, b_star)
-        J = ComputeCost(p, Y_train, W, lamda, 10000)
-        predicted = predict(p)
-        acc = accuracy(predicted, y_train)
-        print(f'for epoch:{epoch} the cost is {J} and the accuracy is {acc}\n')
-
-    return W_star, b_star
-
-
-
-
-
-'''
 
 
 
