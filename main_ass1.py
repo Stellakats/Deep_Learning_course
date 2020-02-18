@@ -9,6 +9,9 @@ def main():
     LOAD_TEST_DATASET = False
     LOAD_VALIDATION_DATASET = True
     EXP1 = True
+    EXP2 = True
+    EXP3 = True
+    EXP4 = True
 
     if VIEW_IMAGE:
         path = ""
@@ -34,34 +37,18 @@ def main():
     if EXP1:
         net = NeuralNet(X_train, y_train, lr=0.01, lamda=0)
         net.mini_batch_GD(X_train, Y_train, X_val, Y_val)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    #K, d, N = sizes(X_train, y_train)
-    #W, b = initializer(K, d)
-
-    #W_star, b_star = MinibatchGD(X_train, Y_train, GDparams, W, b, lamda, N)
-    #p = EvaluateClassifier(X_train, W_star, b_star)
-    #J = ComputeCost(p, Y_train, W, lamda, 10000)
-    # print(f'for epoch:{epoch} the cost is {J}')
-    #predicted = predict(p)
-    #acc = accuracy(predicted, y_train)
-    # print(f'for epoch:{epoch} the accuracy is {acc}\n')
+    
+    if EXP2:
+        net = NeuralNet(X_train, y_train, lr=0.1, lamda=0)
+        net.mini_batch_GD(X_train, Y_train, X_val, Y_val)
+        
+    if EXP3:
+        net = NeuralNet(X_train, y_train, lr=0.01, lamda=0.1)
+        net.mini_batch_GD(X_train, Y_train, X_val, Y_val)
+        
+    if EXP4:
+        net = NeuralNet(X_train, y_train, lr=0.01, lamda=1)
+        net.mini_batch_GD(X_train, Y_train, X_val, Y_val)
 
 
     print("ends")
