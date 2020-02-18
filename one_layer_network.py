@@ -1,10 +1,10 @@
 import numpy as np
-from matplotlib import pyplot
-import pickle
+import matplotlib.pyplot as plt
 
 class NeuralNet:
 
     def __init__(self, X, y, **kwargs):
+
         self.k = np.max(y) + 1
         self.d = np.shape(X)[0] #dimension
         self.N = np.shape(X)[1] #num_samples
@@ -13,12 +13,10 @@ class NeuralNet:
 
         defaults = {
             "lr": 0.01,  # learning rate
-            "m_weights": 0,  # mean of the weights
-            "sigma_weights": 0.01,  # variance of the weights
-            "lamda": 0.1,  # regularization parameter
-            "batch_size": 100,  # #examples per minibatch
-            "epochs": 40,  # number of epochs
-            "h_param": 1e-6  # parameter h for numerical grad check
+            "lamda": 1,  # regularization parameter
+            "batch_size": 100,
+            "epochs": 40,
+            "h_param": 1e-6  # limit h for the numerical gradient check
         }
 
         for key, def_value in defaults.items():
@@ -26,21 +24,21 @@ class NeuralNet:
 
     def w_initializer(self):
         """
-        A function to initialize the weights
+        A function to initialize the weights with 0 mean and 0.01 variance
         :returns
         W: matrix of size K x d
-        s  = W * x + b = [K x d] * [d x N] + [K * N]
+        dim-sanity check : s  = W * x + b = [K x d] * [d x N] + [K * N]
         """
-        return np.random.normal(0, 0.01, (self.k, self.d))
+        return 0.01 * np.random.randn(self.k, self.d)
 
     def b_initializer(self):
         """
-        A function to initialize bias
+        A function to initialize bias ith 0 mean and 0.01 variance
         :returns
         b : matrix of size K x N
-        s  = W * x + b = [K x d] * [d x N] + [K * N]
+        dim-sanity check : s  = W * x + b = [K x d] * [d x N] + [K * N]
         """
-        return np.random.normal(0, 0.01, (self.k, 1))
+        return 0.01 * np.random.randn(self.k, 1)
 
     def softmax(self, s):
         """
@@ -132,7 +130,7 @@ class NeuralNet:
         return dW, db
 
 
-    def mini_batch_GD(self, X_train, Y_train):
+    def mini_batch_GD(self, X_train, Y_train, X_val, Y_val):
         """
         receives whole dataset, divides into batches and performs SGD
         Arguments:
@@ -143,6 +141,10 @@ class NeuralNet:
 
         """
         n_batches = int(self.N / self.batch_size)
+        self.training_accuracies = []
+        self.validation_accuracies = []
+        self.training_costs = []
+        self.validation_costs = []
 
         for epoch in range(self.epochs):
 
@@ -161,20 +163,49 @@ class NeuralNet:
 
 
             Y_pred_train = self.evaluate_classifier(X_train)
-            #Y_pred_val = self.evaluate_classifier(X_val)
-            cost_train = self.compute_cost(X_train, Y_pred_train)
-            acc_train = self.accuracy(Y_pred_train, Y_train)
-            #cost_val = self.compute_cost(X_val, Y_pred_val)
-            #acc_val = self.accuracy(Y_pred_val, Y_val)
+            train_cost = self.compute_cost(X_train, Y_pred_train)
+            train_accuracy = self.accuracy(Y_pred_train, Y_train)
 
-            print("Epoch ", epoch, " // Train accuracy: ", acc_train, " // Train cost: ", cost_train)
+            Y_pred_val = self.evaluate_classifier(X_val)
+            validation_cost = self.compute_cost(X_val, Y_pred_val)
+            validation_accuracy = self.accuracy(Y_pred_val, Y_val)
 
-        #return self.w, self.b
+            self.training_accuracies.append(train_accuracy)
+            self.validation_accuracies.append(validation_accuracy)
+            self.validation_costs.append(validation_cost)
+            self.training_costs.append(train_cost)
+
+            #print(f"Epoch {epoch}: train accuracy: {train_accuracy} and cost : {train_cost}")
+
+        self.plot_over_epochs()
 
 
 
 
+    def plot_over_epochs(self):
 
+        fig = plt.figure(figsize=(10, 7))
+
+        fig.suptitle(f'$\lambda$={self.lamda} , l_r={self.lr}', fontsize=16, y=0.98)
+
+        x = np.arange(1, self.epochs+1)
+
+        ax1 = fig.add_subplot(121)
+        plt.plot(x, self.training_accuracies, c='k', label="Training Accuracy")
+        plt.plot(x, self.validation_accuracies, c='r', label="Validation Accuracy")
+        ax1.set(title=f'Accuracy over Epochs', ylabel='Accuracy', xlabel='epochs')
+        ax1.set(xlim=[0, 10])
+        ax1.legend(loc='best')
+
+        ax2 = fig.add_subplot(122)
+        plt.plot(x, self.training_costs, c='k', label='Training Cost')
+        plt.plot(x, self.validation_costs, c='r', label='Validation Cost')
+        ax2.set(title='Cost over Epochs', ylabel='Cost', xlabel='epochs')
+        ax2.set(xlim=[0, 10])
+        ax2.legend(loc='best')
+
+
+        plt.show()
 
 
 
