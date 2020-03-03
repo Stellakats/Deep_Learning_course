@@ -21,7 +21,7 @@ Creating nets from scratch as part of KTH Deep Learning course DD2424
   - [x] not ready yet
  
 4. Conclusion
-  - [x] not ready yet #Stella
+  - [x] not ready yet # Stella
   
 
  
