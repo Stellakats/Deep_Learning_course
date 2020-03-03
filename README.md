@@ -9,6 +9,8 @@ Creating nets from scratch as part of KTH Deep Learning course DD2424
   - [x] CNNs general theory 
   - [ ] model no 1
   - [ ] model no 2
+  
+  
 - [ ] Method
 - [ ] Result
 - [ ] Discussion
