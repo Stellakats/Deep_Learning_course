@@ -22,5 +22,8 @@ Creating nets from scratch as part of KTH Deep Learning course DD2424
  
 4. Conclusion
   - [x] not ready yet <span style="color:orange;">Word up</span>
+  
+  
+ - ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) `#f03c15`
  
   
