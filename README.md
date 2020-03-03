@@ -11,17 +11,17 @@ Creating nets from scratch as part of KTH Deep Learning course DD2424
   - [ ] model no 2
  
 3. Method
-  - [x] this will be filled after we decide upon models..
-
-  
+  - [ ] Preprocessing part 
+  - [ ] Different parameters on models? 
+ 
 4. Result
-  - [x] not ready yet
+  - [ ] no Results yet
 
 4. Discussion 
-  - [x] not ready yet
+  - [ ] not ready yet
  
 4. Conclusion
-  - [x] not ready yet # Stella
+  - [ ] not ready yet
   
 
  
