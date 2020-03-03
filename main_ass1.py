@@ -9,11 +9,18 @@ def main():
     LOAD_TRAINING_DATASET = True
     LOAD_TEST_DATASET = True
     LOAD_VALIDATION_DATASET = True
+<<<<<<< HEAD
     EXP1 = False
     EXP2 = False
     EXP3 = False
     EXP4 = False
     EXP5 = True
+=======
+    EXP1 = True
+    EXP2 = True
+    EXP3 = True
+    EXP4 = True
+>>>>>>> 8ba7bbf733599902e1858d2527858f40d7ceeb8e
 
     if VIEW_IMAGE:
         path = ""
@@ -38,6 +45,7 @@ def main():
 
     if EXP1:
         net = NeuralNet(X_train, y_train, lr=0.01, lamda=0)
+<<<<<<< HEAD
         net.mini_batch_GD(X_train, Y_train, X_test, Y_test, al=False)
 
     if EXP2:
@@ -57,6 +65,21 @@ def main():
         net.mini_batch_GD(X_train, Y_train, X_val, Y_val, al=True)
 
 
+=======
+        net.mini_batch_GD(X_train, Y_train, X_val, Y_val)
+    
+    if EXP2:
+        net = NeuralNet(X_train, y_train, lr=0.1, lamda=0)
+        net.mini_batch_GD(X_train, Y_train, X_val, Y_val)
+        
+    if EXP3:
+        net = NeuralNet(X_train, y_train, lr=0.01, lamda=0.1)
+        net.mini_batch_GD(X_train, Y_train, X_val, Y_val)
+        
+    if EXP4:
+        net = NeuralNet(X_train, y_train, lr=0.01, lamda=1)
+        net.mini_batch_GD(X_train, Y_train, X_val, Y_val)
+>>>>>>> 8ba7bbf733599902e1858d2527858f40d7ceeb8e
 
 
     print("ends")
