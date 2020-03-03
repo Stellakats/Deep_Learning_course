@@ -21,10 +21,8 @@ Creating nets from scratch as part of KTH Deep Learning course DD2424
   - [x] not ready yet
  
 4. Conclusion
-  - [x] not ready yet <span style="color:orange;">Word up</span>
+  - [x] not ready yet '''Stella'''
   
-<div class="text-purple">
-  This text is purple, <a href="#" class="text-inherit">including the link</a>
-</div>
+
  
   
