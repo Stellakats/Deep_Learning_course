@@ -76,10 +76,5 @@ def main():
         net.mini_batch_GD(X_train, Y_train, X_val, Y_val, al=True)
 
 
-
-    print("ends")
-
-
-
 if __name__ == "__main__":
     main()
