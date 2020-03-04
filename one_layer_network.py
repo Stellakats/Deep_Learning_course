@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class NeuralNet:
 
     def __init__(self, X, y, **kwargs):
@@ -130,7 +131,7 @@ class NeuralNet:
         return dW, db
 
 
-    def mini_batch_GD(self, X_train, Y_train, X_val, Y_val):
+    def mini_batch_GD(self, X_train, Y_train, X_val, Y_val, al):
         """
         receives whole dataset, divides into batches and performs SGD
         Arguments:
@@ -175,12 +176,10 @@ class NeuralNet:
             self.validation_costs.append(validation_cost)
             self.training_costs.append(train_cost)
 
-            #print(f"Epoch {epoch}: train accuracy: {train_accuracy} and cost : {train_cost}")
+            print(f"Epoch {epoch}: train accuracy: {train_accuracy}  cost : {train_cost} and validation accuracy: {validation_accuracy} ")
 
         self.plot_over_epochs()
-
-
-
+        self.plot_w(al)
 
     def plot_over_epochs(self):
 
@@ -194,18 +193,120 @@ class NeuralNet:
         plt.plot(x, self.training_accuracies, c='k', label="Training Accuracy")
         plt.plot(x, self.validation_accuracies, c='r', label="Validation Accuracy")
         ax1.set(title=f'Accuracy over Epochs', ylabel='Accuracy', xlabel='epochs')
-        ax1.set(xlim=[0, 10])
+        ax1.set(xlim=[0, self.epochs])
         ax1.legend(loc='best')
 
         ax2 = fig.add_subplot(122)
         plt.plot(x, self.training_costs, c='k', label='Training Cost')
         plt.plot(x, self.validation_costs, c='r', label='Validation Cost')
         ax2.set(title='Cost over Epochs', ylabel='Cost', xlabel='epochs')
-        ax2.set(xlim=[0, 10])
+        ax2.set(xlim=[0, self.epochs+1])
         ax2.legend(loc='best')
 
-
         plt.show()
+        #plt.savefig('')
+
+    def plot_w(self, al):
+
+        if al:
+            for i in range(self.k):
+                w_image = self.w[i, :].reshape((32, 32, 3), order='F')
+                w_image = ((w_image - w_image.min()) / (w_image.max() - w_image.min()))
+                w_image = np.rot90(w_image, 3)
+                plt.imshow(w_image)
+                plt.xticks([])
+                plt.yticks([])
+                plt.title("Class " + str(i))
+
+                plt.savefig(f'{i}')
+
+        else:
+            w_image = self.w[1, :].reshape((32, 32, 3), order='F')
+            w_image = ((w_image - w_image.min()) / (w_image.max() - w_image.min()))
+            w_image = np.rot90(w_image, 3)
+            plt.imshow(w_image)
+            plt.xticks([])
+            plt.yticks([])
+            plt.title("Class " + str(1))
+            plt.show()
+            #plt.savefig('')
+
+    ##### Code for Gradient checking #####
+
+    def check_gradients(self, X, Y, method='finite_diff'):
+        grad_w_num = np.zeros((self.k, self.d))
+        Y_pred = self.evaluate_classifier(X)
+        grad_b, grad_w = self.compute_gradients(X, Y, Y_pred)
+        if method == 'finite_diff':
+            grad_b_num, grad_w_num = self.compute_gradient_num_fast(X, Y)
+        elif method == 'centered_diff':
+            grad_b_num, grad_w_num = self.compute_gradient_num_slow(X, Y)
+        else:
+            print(method, "is not a valid method to check gradients")
+
+        grad_w_vec = grad_w.flatten()
+        grad_w_num_vec = grad_w_num.flatten()
+        x_w = np.arange(1, grad_w_vec.shape[0] + 1)
+        plt.bar(x_w, grad_w_vec, 0.25, label='Analytical gradient', color='k')
+        plt.bar(x_w + 0.25, grad_w_num_vec, 0.25, label=method, color='red')
+        plt.legend()
+        plt.title(("w gradient, batch size = " + str(X.shape[1])))
+        plt.show()
+        rel_error = abs(grad_w_vec / grad_w_num_vec - 1)
+        print("method = ", method)
+        print("W gradients")
+        print("mean relative error: ", np.mean(rel_error))
+
+        grad_b_vec = grad_b.flatten()
+        grad_b_num_vec = grad_b_num.flatten()
+        x_b = np.arange(1, grad_b.shape[0] + 1)
+        plt.bar(x_b, grad_b_vec, 0.25, label='Analytical gradient', color='k')
+        plt.bar(x_b + 0.25, grad_b_num_vec, 0.25, label=method, color='red')
+        plt.legend()
+        plt.title(("b gradient check, batch size = " + str(X.shape[1])))
+        plt.show()
+        rel_error = abs(grad_b_vec / grad_b_num_vec - 1)
+        print("Bias gradients")
+        print("mean relative error: ", np.mean(rel_error))
+
+
+    def compute_gradient_num_fast(self, X, Y_true):
+        grad_w = np.zeros((self.k, self.d))
+        grad_b = np.zeros((self.k, 1))
+        c = self.compute_cost(X, Y_true)
+        for i in range(self.b.shape[0]):
+            self.b[i] += self.h_param
+            c2 = self.compute_cost(X, Y_true)
+            grad_b[i] = (c2 - c) / self.h_param
+            self.b[i] -= self.h_param
+        for i in range(self.w.shape[0]):  # k
+            for j in range(self.w.shape[1]):  # d
+                self.w[i, j] += self.h_param
+                c2 = self.compute_cost(X, Y_true)
+                grad_w[i, j] = (c2 - c) / self.h_param
+                self.w[i, j] -= self.h_param
+        return grad_b, grad_w
+
+    def compute_gradient_num_slow(self, X, Y_true):
+        grad_w = np.zeros((self.k, self.d))
+        grad_b = np.zeros((self.k, 1))
+        for i in range(self.b.shape[0]):
+            self.b[i] -= self.h_param
+            c1 = self.compute_cost(X, Y_true)
+            self.b[i] += 2 * self.h_param
+            c2 = self.compute_cost(X, Y_true)
+            grad_b[i] = (c2 - c1) / (2 * self.h_param)
+            self.b[i] -= self.h_param
+        for i in range(self.w.shape[0]):  # k
+            for j in range(self.w.shape[1]):  # d
+                self.w[i, j] -= self.h_param
+                c1 = self.compute_cost(X, Y_true)
+                self.w[i, j] += 2 * self.h_param
+                c2 = self.compute_cost(X, Y_true)
+                grad_w[i, j] = (c2 - c1) / (2 * self.h_param)
+                self.w[i, j] -= self.h_param
+        return grad_b, grad_w
+
 
 
 
