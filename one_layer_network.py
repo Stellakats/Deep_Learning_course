@@ -242,7 +242,7 @@ class NeuralNet:
         elif method == 'centered_diff':
             grad_b_num, grad_w_num = self.compute_gradient_num_slow(X, Y)
         else:
-            print(method, "is not a valid method to check gradients")
+            print("not valid name of the checking method")
 
         grad_w_vec = grad_w.flatten()
         grad_w_num_vec = grad_w_num.flatten()
@@ -279,8 +279,8 @@ class NeuralNet:
             c2 = self.compute_cost(X, Y_true)
             grad_b[i] = (c2 - c) / self.h_param
             self.b[i] -= self.h_param
-        for i in range(self.w.shape[0]):  # k
-            for j in range(self.w.shape[1]):  # d
+        for i in range(self.w.shape[0]):
+            for j in range(self.w.shape[1]):
                 self.w[i, j] += self.h_param
                 c2 = self.compute_cost(X, Y_true)
                 grad_w[i, j] = (c2 - c) / self.h_param
@@ -297,8 +297,8 @@ class NeuralNet:
             c2 = self.compute_cost(X, Y_true)
             grad_b[i] = (c2 - c1) / (2 * self.h_param)
             self.b[i] -= self.h_param
-        for i in range(self.w.shape[0]):  # k
-            for j in range(self.w.shape[1]):  # d
+        for i in range(self.w.shape[0]):
+            for j in range(self.w.shape[1]):
                 self.w[i, j] -= self.h_param
                 c1 = self.compute_cost(X, Y_true)
                 self.w[i, j] += 2 * self.h_param
