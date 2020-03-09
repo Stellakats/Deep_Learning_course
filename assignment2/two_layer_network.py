@@ -111,3 +111,249 @@ class NeuralNet:
 
         return correct/ y_true.shape[0]
 
+
+    def compute_gradients(self, x_batch, y_true_batch, y_predicted_batch, h_batch):
+        """
+        Recieves mini-batch of dataset, and corresponding p_batch
+        and yields the gradients
+
+        Arguments:
+            x_batch: image pixel data, size d x n_b
+            y_batch:  one hot representation of labels, size K x n_b
+            predicted_batch: probabilities of predicted labels, size K x n_b
+        Returns:
+            the gradient of W, of size K x d
+            the gradient of b, of size K x 1
+        """
+        G_batch = - (y_true_batch - y_predicted_batch) # 10 x batch_size
+
+        dW2 = 1 / self.batch_size * np.dot(G_batch, h_batch.T)
+        db2 = 1 / self.batch_size * np.sum(G_batch, axis=1).reshape(-1, 1)
+
+        G_batch = np.dot(self.w2.T, G_batch)
+        ind = np.zeros(h_batch.shape)
+        for i in range(h_batch.shape[0]):
+            for j in range(h_batch.shape[1]):
+                if h_batch[i, j] > 0:
+                    ind[i, j] = 1
+        G_batch = G_batch * ind
+
+        dW1 = 1 / self.batch_size * np.dot(G_batch, X_batch.T)
+        db1 = 1 / self.batch_size * np.sum(G_batch, axis=1).reshape(-1, 1)
+
+        dW1 += 2 * self.lamda * self.w1
+        dW2 += 2 * self.lamda * self.w2
+
+
+        return dW1, db1, dW2, db2
+
+
+    def mini_batch_GD(self, X_train, Y_train, X_val, Y_val, al):
+        """
+        receives whole dataset, divides into batches and performs SGD
+        Arguments:
+
+        Returns:
+            W: learnt weights
+            b: learnt biases
+
+        """
+        n_batches = int(self.N / self.batch_size)
+        self.training_accuracies = []
+        self.validation_accuracies = []
+        self.training_costs = []
+        self.validation_costs = []
+
+        for epoch in range(self.epochs):
+
+            for i in range(n_batches):
+                # create the mini batch
+                i_start = i * self.batch_size
+                i_end = i * self.batch_size + self.batch_size
+                X_batch = X_train[:, i_start:i_end]
+                Y_batch = Y_train[:, i_start:i_end]
+
+                Y_pred_batch, h_pred_batch = self.evaluate_classifier(X_batch)
+                dW1, db1, dW2, db2 = self.compute_gradients(X_batch, Y_batch, Y_pred_batch, h_pred_batch)
+
+                self.w1 -= self.lr * dW1
+                self.b1 -= self.lr * db1
+                self.w2 -= self.lr * dW2
+                self.b2 -= self.lr * db2
+
+                l = int((epoch * n_batches + i) / (2 * self.ns))
+                if t < (2 * l + 1) * self.ns:
+                    self.lr = self.lr_min + (t - 2 * l * self.ns) / self.ns * (self.lr_max - self.lr_min)
+                else:
+                    self.lr = self.lr_max - (t - (2 * l + 1) * self.ns) / self.ns * (self.lr_max - self.lr_min)
+
+
+            Y_pred_train, h = self.evaluate_classifier(X_train)
+            train_cost = self.compute_cost(X_train, Y_pred_train)
+            train_accuracy = self.accuracy(Y_pred_train, Y_train)
+
+            Y_pred_val, h = self.evaluate_classifier(X_val)
+            validation_cost = self.compute_cost(X_val, Y_pred_val)
+            validation_accuracy = self.accuracy(Y_pred_val, Y_val)
+
+            self.training_accuracies.append(train_accuracy)
+            self.validation_accuracies.append(validation_accuracy)
+            self.validation_costs.append(validation_cost)
+            self.training_costs.append(train_cost)
+
+            print(f"Epoch {epoch}: train accuracy: {train_accuracy}  cost : {train_cost} and validation accuracy: {validation_accuracy} ")
+
+        self.plot_over_epochs()
+        self.plot_w(al)
+
+    def plot_over_epochs(self):
+
+        fig = plt.figure(figsize=(10, 7))
+
+        fig.suptitle(f'$\lambda$={self.lamda} , l_r={self.lr}', fontsize=16, y=0.98)
+
+        x = np.arange(1, self.epochs+1)
+
+        ax1 = fig.add_subplot(121)
+        plt.plot(x, self.training_accuracies, c='k', label="Training Accuracy")
+        plt.plot(x, self.validation_accuracies, c='r', label="Validation Accuracy")
+        ax1.set(title=f'Accuracy over Epochs', ylabel='Accuracy', xlabel='epochs')
+        ax1.set(xlim=[0, self.epochs])
+        ax1.legend(loc='best')
+
+        ax2 = fig.add_subplot(122)
+        plt.plot(x, self.training_costs, c='k', label='Training Cost')
+        plt.plot(x, self.validation_costs, c='r', label='Validation Cost')
+        ax2.set(title='Cost over Epochs', ylabel='Cost', xlabel='epochs')
+        ax2.set(xlim=[0, self.epochs+1])
+        ax2.legend(loc='best')
+
+        plt.show()
+        #plt.savefig('')
+
+    def plot_w(self, al):
+
+        if al:
+            for i in range(self.k):
+                w_image = self.w[i, :].reshape((32, 32, 3), order='F')
+                w_image = ((w_image - w_image.min()) / (w_image.max() - w_image.min()))
+                w_image = np.rot90(w_image, 3)
+                plt.imshow(w_image)
+                plt.xticks([])
+                plt.yticks([])
+                plt.title("Class " + str(i))
+
+                plt.savefig(f'{i}')
+
+        else:
+            w_image = self.w[1, :].reshape((32, 32, 3), order='F')
+            w_image = ((w_image - w_image.min()) / (w_image.max() - w_image.min()))
+            w_image = np.rot90(w_image, 3)
+            plt.imshow(w_image)
+            plt.xticks([])
+            plt.yticks([])
+            plt.title("Class " + str(1))
+            plt.show()
+            #plt.savefig('')
+
+    ##### Code for Gradient checking #####
+
+    def check_gradients(self, X, Y, method='finite_diff'):
+        dw_num = np.zeros((self.k, self.d))
+        Y_pred, h = self.evaluate_classifier(X)
+        dW1, db1, dW2, db2 = self.compute_gradients(X, Y, Y_pred)
+        if method == 'finite_diff':
+            dW1_num, db1_num, dW2_num, db2_num = self.compute_gradient_num_fast(X, Y)
+        elif method == 'centered_diff':
+            dW1_num, db1_num, dW2_num, db2_num = self.compute_gradient_num_slow(X, Y)
+        else:
+            print("not valid name of the checking method")
+
+        dw1_vector = dw1.flatten()
+        dw1_num_vector = dw1_num.flatten()
+        x_w1 = np.arange(1, dw1_vector.shape[0] + 1)
+        plt.bar(x_w1, dw1_vector, 0.35, label='Analytical gradient', color='blue')
+        plt.bar(x_w1 + 0.35, dw1_num_vector, 0.35, label=method, color='red')
+        plt.legend()
+        plt.title(("Gradient check of w1, batch size = " + str(X.shape[1])))
+        plt.show()
+
+        dw2_vector = dw2.flatten()
+        dw2_num_vector = dw2_num.flatten()
+        x_w2 = np.arange(1, dw2_vector.shape[0] + 1)
+        plt.bar(x_w2, dw2_vector, 0.35, label='Analytical gradient', color='blue')
+        plt.bar(x_w2 + 0.35, dw2_num_vector, 0.35, label=method, color='red')
+        plt.legend()
+        plt.title(("Gradient check of w2, batch size = " + str(X.shape[1])))
+        plt.show()
+
+        db1_vector = db1.flatten()
+        db1_num_vector = db1_num.flatten()
+        x_b1 = np.arange(1, db1.shape[0] + 1)
+        plt.bar(x_b1, db1_vector, 0.35, label='Analytical gradient', color='blue')
+        plt.bar(x_b1 + 0.35, db1_num_vector, 0.35, label=method, color='red')
+        plt.legend()
+        plt.title(("Gradient check of b1, batch size = " + str(X.shape[1])))
+        plt.show()
+
+        db2_vector = db2.flatten()
+        db2_num_vector = db2_num.flatten()
+        x_b2 = np.arange(1, db2.shape[0] + 1)
+        plt.bar(x_b2, db2_vector, 0.35, label='Analytical gradient', color='blue')
+        plt.bar(x_b2 + 0.35, db2_num_vector, 0.35, label=method, color='red')
+        plt.legend()
+        plt.title(("Gradient check of b2, batch size = " + str(X.shape[1])))
+        plt.show()
+
+
+    def compute_gradient_num_fast(self, X, Y_true):
+        dw = np.zeros((self.k, self.d))
+        db = np.zeros((self.k, 1))
+        c = self.compute_cost(X, Y_true)
+        for i in range(self.b.shape[0]):
+            self.b[i] += self.h_param
+            c2 = self.compute_cost(X, Y_true)
+            db[i] = (c2 - c) / self.h_param
+            self.b[i] -= self.h_param
+        for i in range(self.w.shape[0]):
+            for j in range(self.w.shape[1]):
+                self.w[i, j] += self.h_param
+                c2 = self.compute_cost(X, Y_true)
+                dw[i, j] = (c2 - c) / self.h_param
+                self.w[i, j] -= self.h_param
+        return db, dw
+
+    def compute_gradient_num_slow(self, X, Y_true):
+        dw = np.zeros((self.k, self.d))
+        db = np.zeros((self.k, 1))
+        for i in range(self.b.shape[0]):
+            self.b[i] -= self.h_param
+            c1 = self.compute_cost(X, Y_true)
+            self.b[i] += 2 * self.h_param
+            c2 = self.compute_cost(X, Y_true)
+            db[i] = (c2 - c1) / (2 * self.h_param)
+            self.b[i] -= self.h_param
+        for i in range(self.w.shape[0]):
+            for j in range(self.w.shape[1]):
+                self.w[i, j] -= self.h_param
+                c1 = self.compute_cost(X, Y_true)
+                self.w[i, j] += 2 * self.h_param
+                c2 = self.compute_cost(X, Y_true)
+                dw[i, j] = (c2 - c1) / (2 * self.h_param)
+                self.w[i, j] -= self.h_param
+        return db, dw
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
