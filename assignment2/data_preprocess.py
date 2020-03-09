@@ -72,11 +72,17 @@ class LoadData():
 
         return X.T, y, Y.T
 
+    
     def convert(self, array):
         """
         converts pixel values to 0-1 kind of values
+        and centers them so that they have zero mean
         """
-        return array / 255.0
+        mean = np.mean(array, axis=0)
+        std = np.std(array, axis=0)
+        array /= 255.0
+        array -= mean
+        return array /std
 
     def one_hot_encode(self, K, y):
         """
