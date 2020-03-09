@@ -42,18 +42,18 @@ def main():
         X_train, y_train, Y_train = load_train_data.load_batch()
 
     if LOAD_TEST_DATASET:
-        test_data = "/Users/stella/Desktop/data_batch_2"
+        test_data = "/Users/stella/Desktop/test_batch"
         load_test_data = LoadData(test_data)
         X_test, y_test, Y_test = load_test_data.load_batch()
 
     if LOAD_VALIDATION_DATASET:
-        val_data = "/Users/stella/Desktop/test_batch"
+        val_data = "/Users/stella/Desktop/data_batch_2"
         load_val_data = LoadData(val_data)
         X_val, y_val, Y_val = load_val_data.load_batch()
 
     if EXP0:
         net = NeuralNet(X_train, y_train, lr=0.01, lamda=0)
-        net.check_gradients(X_train, Y_train, method='finite_diff')
+        net.check_gradients(X_train[:10, :100], Y_train[:, :100], method='finite_diff')
 
     if EXP1:
         net = NeuralNet(X_train, y_train, lr=0.01, lamda=0)
