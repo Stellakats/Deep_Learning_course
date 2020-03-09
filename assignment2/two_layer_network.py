@@ -6,29 +6,30 @@ class NeuralNet:
 
     def __init__(self, X, y, **kwargs):
 
-        self.k = np.max(y) + 1
-        self.d = np.shape(X)[0] #dimension
-        self.N = np.shape(X)[1] #num_samples
-        self.w1, self.w2 = self.w_initializer()
-        self.b1, self.b2 = self.b_initializer()
-
-        self.m = self.h_size
-        self.ns = 2 * int(self.n / self.batch_size)
-        print("ns: ", self.ns)
-
         defaults = {
             "lr": 0.01,  # learning rate
             "lamda": 1,  # regularization parameter
             "batch_size": 100,
-            "epochs": 40,
+            "epochs": 10,
             "h_param": 1e-6,  # limit h for the numerical gradient check
-            "h_size": 50,  # number of nodes in the hidden layer
+            "m": 50,  # number of nodes in the hidden layer
             "lr_max": 1e-1,  # maximum for cyclical learning rate
             "lr_min": 1e-5  # minimum for cyclical learning rate
         }
 
         for key, def_value in defaults.items():
             setattr(self, key, kwargs.get(key, def_value))
+
+        self.k = np.max(y) + 1
+        self.d = np.shape(X)[0] #dimension
+        self.N = np.shape(X)[1] #num_samples
+        self.w1, self.w2 = self.w_initializer()
+        self.b1, self.b2 = self.b_initializer()
+        self.m = self.m
+        self.ns = 2 * int(self.N / self.batch_size)
+        print("ns: ", self.ns)
+
+
 
     def w_initializer(self):
         """
@@ -71,7 +72,7 @@ class NeuralNet:
             the class probabilities for every sample. that is a matrix of size K x N
         """
         s1 = np.dot(self.w1, X) + self.b1
-        h = np.max(0, s1)
+        h = np.maximum(0, s1)
         s = np.dot(self.w2, h) + self.b2
         Y_pred = self.softmax(s)
         return Y_pred, h
@@ -112,7 +113,7 @@ class NeuralNet:
         return correct/ y_true.shape[0]
 
 
-    def compute_gradients(self, x_batch, y_true_batch, y_predicted_batch, h_batch):
+    def compute_gradients(self, X_batch, y_true_batch, y_predicted_batch, h_batch):
         """
         Recieves mini-batch of dataset, and corresponding p_batch
         and yields the gradients
@@ -148,7 +149,7 @@ class NeuralNet:
         return dW1, db1, dW2, db2
 
 
-    def mini_batch_GD(self, X_train, Y_train, X_val, Y_val, al):
+    def mini_batch_GD(self, X_train, Y_train, X_val, Y_val):
         """
         receives whole dataset, divides into batches and performs SGD
         Arguments:
@@ -182,10 +183,10 @@ class NeuralNet:
                 self.b2 -= self.lr * db2
 
                 l = int((epoch * n_batches + i) / (2 * self.ns))
-                if t < (2 * l + 1) * self.ns:
-                    self.lr = self.lr_min + (t - 2 * l * self.ns) / self.ns * (self.lr_max - self.lr_min)
+                if (epoch * n_batches + i) < (2 * l + 1) * self.ns:
+                    self.lr = self.lr_min + ((epoch * n_batches + i) - 2 * l * self.ns) / self.ns * (self.lr_max - self.lr_min)
                 else:
-                    self.lr = self.lr_max - (t - (2 * l + 1) * self.ns) / self.ns * (self.lr_max - self.lr_min)
+                    self.lr = self.lr_max - ((epoch * n_batches + i) - (2 * l + 1) * self.ns) / self.ns * (self.lr_max - self.lr_min)
 
 
             Y_pred_train, h = self.evaluate_classifier(X_train)
@@ -201,10 +202,10 @@ class NeuralNet:
             self.validation_costs.append(validation_cost)
             self.training_costs.append(train_cost)
 
-            print(f"Epoch {epoch}: train accuracy: {train_accuracy}  cost : {train_cost} and validation accuracy: {validation_accuracy} ")
+            print(f"Epoch {epoch}: train accuracy: {train_accuracy}  train cost : {train_cost}  validation accuracy: {validation_accuracy} validation cost {validation_cost}")
 
         self.plot_over_epochs()
-        self.plot_w(al)
+
 
     def plot_over_epochs(self):
 
@@ -231,30 +232,6 @@ class NeuralNet:
         plt.show()
         #plt.savefig('')
 
-    def plot_w(self, al):
-
-        if al:
-            for i in range(self.k):
-                w_image = self.w[i, :].reshape((32, 32, 3), order='F')
-                w_image = ((w_image - w_image.min()) / (w_image.max() - w_image.min()))
-                w_image = np.rot90(w_image, 3)
-                plt.imshow(w_image)
-                plt.xticks([])
-                plt.yticks([])
-                plt.title("Class " + str(i))
-
-                plt.savefig(f'{i}')
-
-        else:
-            w_image = self.w[1, :].reshape((32, 32, 3), order='F')
-            w_image = ((w_image - w_image.min()) / (w_image.max() - w_image.min()))
-            w_image = np.rot90(w_image, 3)
-            plt.imshow(w_image)
-            plt.xticks([])
-            plt.yticks([])
-            plt.title("Class " + str(1))
-            plt.show()
-            #plt.savefig('')
 
     ##### Code for Gradient checking #####
 
